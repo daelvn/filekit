@@ -107,7 +107,7 @@ getPermissions = _check (path) ->
 
 --- Gets the permissions as an octal number.
 -- @tparam string path Path.
--- @tparam number Permission number.
+-- @treturn number Permission number.
 getOctalPermissions = _check (path) ->
   permnum    = 000
   permstring = lfs.attributes path, "permissions"
@@ -210,7 +210,7 @@ getLinkPermissions = _check (path) ->
 
 --- Gets the permissions as an octal number.
 -- @tparam string path Path to the link.
--- @tparam number Permission number.
+-- @treturn number Permission number.
 getLinkOctalPermissions = _check (path) ->
   permnum    = 000
   permstring = lfs.symlinkattributes path, "permissions"
