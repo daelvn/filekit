@@ -240,14 +240,17 @@ getLinkBlockSize = _check (path) -> lfs.symlinkattributes path, "blksize"
 -- @treturn table Table of all the subnodes.
 list = _check (path) -> return for _, v in lfs.dir path do v
 
+safeOpen = (path, mode) ->
+  a, b = io.open path, mode
+  return a and a or {error: b}
 --- Checks if a path refers to an existing file or directory.
 -- @tparam string path Path to check.
 -- @treturn boolean Whether it exists or not.
-exists = _check (path) -> with io.open path, "rb"
+exists = _check (path) -> with safeOpen path, "rb"
   if .close
     \close!
     return true
-  else return false
+  else return false, .error
 
 --- Checks if a path refers to an existing directory.
 -- @tparam string path Path to check.

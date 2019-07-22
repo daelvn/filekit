@@ -261,14 +261,21 @@ local list = _check(function(path)
     return _accum_0
   end)()
 end)
+local safeOpen
+safeOpen = function(path, mode)
+  local a, b = io.open(path, mode)
+  return a and a or {
+    error = b
+  }
+end
 local exists = _check(function(path)
   do
-    local _with_0 = io.open(path, "rb")
+    local _with_0 = safeOpen(path, "rb")
     if _with_0.close then
       _with_0:close()
       return true
     else
-      return false
+      return false, _with_0.error
     end
     return _with_0
   end
