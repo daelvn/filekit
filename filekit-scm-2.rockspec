@@ -1,5 +1,5 @@
 package      = "filekit"
-version      = "scm-1"
+version      = "scm-2"
 source       = {
   url        = "git://github.com/daelvn/filekit.git"
 }
@@ -11,7 +11,6 @@ description  = {
     as a drop-in replacement for the ComputerCraft FS API, so you might write
     programs compatible with both platforms (CC and PC).
   ]],
-  license    = "MIT/X11",
   homepage   = "https://git.daelvn.ga/filekit/"
 }
 dependencies = {

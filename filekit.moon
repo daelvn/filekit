@@ -3,7 +3,6 @@
 -- It also incorporates compatibility with the [ComputerCraft FS API](http://computercraft.info/wiki/Fs_(API))
 -- @module filekit
 -- @author daelvn
--- @license MIT
 -- @copyright 11.07.2019
 
 -- If we're on ComputerCraft, just return the FS API.
