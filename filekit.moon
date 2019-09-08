@@ -239,9 +239,14 @@ getLinkBlockSize = _check (path) -> lfs.symlinkattributes path, "blksize"
 -- @treturn table Table of all the subnodes.
 list = _check (path) -> return for v in lfs.dir path do v
 
+--- Returns a file handle, or if errored, a table with a field `error` that contains the error.
+-- @tparam string path Path to the file.
+-- @tparam string mode Mode to open the file in.
+-- @treturn File|table Either a file or a table containing `error`.
 safeOpen = (path, mode) ->
   a, b = io.open path, mode
   return a and a or {error: b}
+
 --- Checks if a path refers to an existing file or directory.
 -- @tparam string path Path to check.
 -- @treturn boolean Whether it exists or not.
@@ -467,4 +472,5 @@ setMode = (file, mode) -> lfs.setmode file, mode
   :link, :symlink, :touch, :lockDir, :lock, :unlock, :setMode
   :getLinkBlockSize, :getLinkBlocks, :getLinkOctalPermissions, :getLinkDevice, :getLinkDeviceType, :getLinkUID, :getLinkGID, :getLinkInode, :getLinkLastAccess
   :getLinkLastChange, :getLinkLastModification, :getLinkLinks, :getLinkMode, :getLinkPermissions, :getLinkSize
+  :safeOpen
 }

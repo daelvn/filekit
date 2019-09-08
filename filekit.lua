@@ -511,5 +511,6 @@ return {
   getLinkLinks = getLinkLinks,
   getLinkMode = getLinkMode,
   getLinkPermissions = getLinkPermissions,
-  getLinkSize = getLinkSize
+  getLinkSize = getLinkSize,
+  safeOpen = safeOpen
 }
