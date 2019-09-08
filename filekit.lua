@@ -14,7 +14,10 @@ _check = function(f)
     return f(...)
   end
 end
-local currentDir = lfs.currentdir()
+local currentDir
+currentDir = function()
+  return lfs.currentdir()
+end
 local changeDir = _check(function(path)
   lfs.chdir(path)
   currentDir = path
