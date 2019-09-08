@@ -18,7 +18,7 @@ _check = (f) -> (...) ->
   f ...
 
 --- Represents the current working directory
-currentDir = lfs.currentdir!
+currentDir = -> lfs.currentdir!
 
 --- Changes the current working directory
 -- @tparam string path Changes the CWD to this path.
