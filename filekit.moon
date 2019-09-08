@@ -237,7 +237,7 @@ getLinkBlockSize = _check (path) -> lfs.symlinkattributes path, "blksize"
 --- Returns a list of all the files (including subdirectories but not their contents) contained in a directory, as a numerically indexed table.
 -- @tparam string path Path of the folder.
 -- @treturn table Table of all the subnodes.
-list = _check (path) -> return for _, v in lfs.dir path do v
+list = _check (path) -> return for v in lfs.dir path do v
 
 safeOpen = (path, mode) ->
   a, b = io.open path, mode

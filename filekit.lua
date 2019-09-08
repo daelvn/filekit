@@ -257,7 +257,7 @@ local list = _check(function(path)
   return (function()
     local _accum_0 = { }
     local _len_0 = 1
-    for _, v in lfs.dir(path) do
+    for v in lfs.dir(path) do
       _accum_0[_len_0] = v
       _len_0 = _len_0 + 1
     end
