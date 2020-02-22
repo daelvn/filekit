@@ -418,7 +418,7 @@ link = function(fr, to)
 end
 local symlink
 symlink = function(fr, to)
-  return lfs.symlink(fr, to, true)
+  return lfs.link(fr, to, true)
 end
 local touch
 touch = function(path, atime, mtime)

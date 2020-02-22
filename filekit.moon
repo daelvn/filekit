@@ -423,7 +423,7 @@ link = (fr, to) -> lfs.link fr, to, false
 -- @tparam string fr Base link.
 -- @tparam string to Target link.
 -- @treturn nil
-symlink = (fr, to) -> lfs.symlink fr, to, true
+symlink = (fr, to) -> lfs.link fr, to, true
 
 --- Set access and modification times of a file.
 -- The times should be in seconds and generated with `os.time`.
