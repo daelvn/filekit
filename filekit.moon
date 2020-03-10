@@ -239,6 +239,22 @@ getLinkBlockSize = _check (path) -> lfs.symlinkattributes path, "blksize"
 -- @treturn table Table of all the subnodes.
 list = _check (path) -> return for v in lfs.dir path do v
 
+--- List iterator (as lfs.dir)
+-- @tparam string path Path of the folder.
+-- @treturn function Iterator
+ilist = _check (path) ->
+  files = list path
+  i     = 0
+  n     = #files
+  return ->
+    i += 1
+    if i <= n then return files[i]
+
+--- Returns a list of all the files (including subdirectories), excluding .. and .
+-- @tparam string path Path of the folder.
+-- @treturn table Table of all the subnodes.
+list1 = _check (path) -> [file for file in *list path when (file != "..") and (file != ".")]
+
 --- Returns a file handle, or if errored, a table with a field `error` that contains the error.
 -- @tparam string path Path to the file.
 -- @tparam string mode Mode to open the file in.
@@ -465,9 +481,63 @@ unlock = (file, start, length) -> lfs.unlock file, start, length
 -- @treturn string|nil If not successful, an error message.
 setMode = (file, mode) -> lfs.setmode file, mode
 
+--- Returns a list of paths matched by the globs
+-- @tparam string path Path with globs
+-- @treturn table Table of globbed files
+glob = (path) ->
+  return path unless path\match "%*"
+  sant  = (pattern) -> pattern\gsub "[%(%)%.%%%+%-%*%?%[%]%^%$]", "%%%0" if pattern
+  parts = [part for part in path\gmatch "[^/]+"]
+  dirs  = (path\match "/$") == "/"
+  accp  = ""
+  files = {}
+  for i, part in ipairs parts
+    print "part #{i}: #{part}"
+    if part\match "%*"
+      -- select all matching
+      matching = [combine accp, node for node in *list1 accp when (node\match ((sant part)\gsub "%%%*", "(.+)"))]
+      -- select only dirs if trailing /
+      if dirs
+        matching = [dir for dir in *matching when isDir dir]
+      -- if not final part, iterate in
+      if i != #parts
+        collect  = {}
+        -- get only dirs
+        matching = [dir for dir in *matching when isDir dir]
+        -- for all dirs
+        for ma in *matching do
+          -- get files that match them
+          print "->", ma
+          -- copy parts, replace this part with glob
+          partc    = [part for part in *parts]
+          partc[i] = getName ma
+          -- glob in
+          for file in *glob table.concat partc, "/"
+            print "file ->", file
+            table.insert collect, file
+        -- return
+        return collect
+      print "ma ->", (require "inspect") matching
+      files = matching
+    else
+      accp ..= part .. "/"
+  files
+
+--- Glob as an iterator
+-- @tparam string path Path with globs
+-- @treturn function Iterator
+iglob = (path) ->
+  globbed = glob path
+  i       = 0
+  n       = #globbed
+  return ->
+    i += 1
+    if i <= n then return globbed[i]
+
 {
   :currentDir, :changeDir, :getDir, :getBlockSize, :getBlocks, :getOctalPermissions, :getDevice, :getDeviceType, :getDrive, :getFreeSpace, :getUID, :getGID
   :getInode, :getLastAccess, :getLastChange, :getLastModification, :getLinks, :getMode, :getName, :getPermissions, :getSize, :exists, :list, :isReadOnly
+  :ilist, :list1, :glob, :iglob
   :isDir, :isFile, :isBlockDevice, :isCharDevice, :isSocket, :isPipe, :isLink, :isOther, :makeDir, :move, :copy, :remove, :delete, :combine, :open, :find
   :link, :symlink, :touch, :lockDir, :lock, :unlock, :setMode
   :getLinkBlockSize, :getLinkBlocks, :getLinkOctalPermissions, :getLinkDevice, :getLinkDeviceType, :getLinkUID, :getLinkGID, :getLinkInode, :getLinkLastAccess

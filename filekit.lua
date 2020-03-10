@@ -264,6 +264,30 @@ local list = _check(function(path)
     return _accum_0
   end)()
 end)
+local ilist = _check(function(path)
+  local files = list(path)
+  local i = 0
+  local n = #files
+  return function()
+    i = i + 1
+    if i <= n then
+      return files[i]
+    end
+  end
+end)
+local list1 = _check(function(path)
+  local _accum_0 = { }
+  local _len_0 = 1
+  local _list_0 = list(path)
+  for _index_0 = 1, #_list_0 do
+    local file = _list_0[_index_0]
+    if (file ~= "..") and (file ~= ".") then
+      _accum_0[_len_0] = file
+      _len_0 = _len_0 + 1
+    end
+  end
+  return _accum_0
+end)
 local safeOpen
 safeOpen = function(path, mode)
   local a, b = io.open(path, mode)
@@ -449,6 +473,119 @@ local setMode
 setMode = function(file, mode)
   return lfs.setmode(file, mode)
 end
+local glob
+glob = function(path)
+  if not (path:match("%*")) then
+    return path
+  end
+  local sant
+  sant = function(pattern)
+    if pattern then
+      return pattern:gsub("[%(%)%.%%%+%-%*%?%[%]%^%$]", "%%%0")
+    end
+  end
+  local parts
+  do
+    local _accum_0 = { }
+    local _len_0 = 1
+    for part in path:gmatch("[^/]+") do
+      _accum_0[_len_0] = part
+      _len_0 = _len_0 + 1
+    end
+    parts = _accum_0
+  end
+  local dirs = (path:match("/$")) == "/"
+  local accp = ""
+  local files = { }
+  for i, part in ipairs(parts) do
+    print("part " .. tostring(i) .. ": " .. tostring(part))
+    if part:match("%*") then
+      local matching
+      do
+        local _accum_0 = { }
+        local _len_0 = 1
+        local _list_0 = list1(accp)
+        for _index_0 = 1, #_list_0 do
+          local node = _list_0[_index_0]
+          if (node:match(((sant(part)):gsub("%%%*", "(.+)")))) then
+            _accum_0[_len_0] = combine(accp, node)
+            _len_0 = _len_0 + 1
+          end
+        end
+        matching = _accum_0
+      end
+      if dirs then
+        do
+          local _accum_0 = { }
+          local _len_0 = 1
+          for _index_0 = 1, #matching do
+            local dir = matching[_index_0]
+            if isDir(dir) then
+              _accum_0[_len_0] = dir
+              _len_0 = _len_0 + 1
+            end
+          end
+          matching = _accum_0
+        end
+      end
+      if i ~= #parts then
+        local collect = { }
+        do
+          local _accum_0 = { }
+          local _len_0 = 1
+          for _index_0 = 1, #matching do
+            local dir = matching[_index_0]
+            if isDir(dir) then
+              _accum_0[_len_0] = dir
+              _len_0 = _len_0 + 1
+            end
+          end
+          matching = _accum_0
+        end
+        for _index_0 = 1, #matching do
+          local ma = matching[_index_0]
+          print("->", ma)
+          local partc
+          do
+            local _accum_0 = { }
+            local _len_0 = 1
+            for _index_1 = 1, #parts do
+              local part = parts[_index_1]
+              _accum_0[_len_0] = part
+              _len_0 = _len_0 + 1
+            end
+            partc = _accum_0
+          end
+          partc[i] = getName(ma)
+          local _list_0 = glob(table.concat(partc, "/"))
+          for _index_1 = 1, #_list_0 do
+            local file = _list_0[_index_1]
+            print("file ->", file)
+            table.insert(collect, file)
+          end
+        end
+        return collect
+      end
+      print("ma ->", (require("inspect"))(matching))
+      files = matching
+    else
+      accp = accp .. (part .. "/")
+    end
+  end
+  return files
+end
+local iglob
+iglob = function(path)
+  local globbed = glob(path)
+  local i = 0
+  local n = #globbed
+  return function()
+    i = i + 1
+    if i <= n then
+      return globbed[i]
+    end
+  end
+end
 return {
   currentDir = currentDir,
   changeDir = changeDir,
@@ -474,6 +611,10 @@ return {
   exists = exists,
   list = list,
   isReadOnly = isReadOnly,
+  ilist = ilist,
+  list1 = list1,
+  glob = glob,
+  iglob = iglob,
   isDir = isDir,
   isFile = isFile,
   isBlockDevice = isBlockDevice,
