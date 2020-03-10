@@ -498,7 +498,6 @@ glob = function(path)
   local accp = ""
   local files = { }
   for i, part in ipairs(parts) do
-    print("part " .. tostring(i) .. ": " .. tostring(part))
     if part:match("%*") then
       local matching
       do
@@ -544,7 +543,6 @@ glob = function(path)
         end
         for _index_0 = 1, #matching do
           local ma = matching[_index_0]
-          print("->", ma)
           local partc
           do
             local _accum_0 = { }
@@ -560,13 +558,11 @@ glob = function(path)
           local _list_0 = glob(table.concat(partc, "/"))
           for _index_1 = 1, #_list_0 do
             local file = _list_0[_index_1]
-            print("file ->", file)
             table.insert(collect, file)
           end
         end
         return collect
       end
-      print("ma ->", (require("inspect"))(matching))
       files = matching
     else
       accp = accp .. (part .. "/")

@@ -492,7 +492,6 @@ glob = (path) ->
   accp  = ""
   files = {}
   for i, part in ipairs parts
-    print "part #{i}: #{part}"
     if part\match "%*"
       -- select all matching
       matching = [combine accp, node for node in *list1 accp when (node\match ((sant part)\gsub "%%%*", "(.+)"))]
@@ -507,17 +506,14 @@ glob = (path) ->
         -- for all dirs
         for ma in *matching do
           -- get files that match them
-          print "->", ma
           -- copy parts, replace this part with glob
           partc    = [part for part in *parts]
           partc[i] = getName ma
           -- glob in
           for file in *glob table.concat partc, "/"
-            print "file ->", file
             table.insert collect, file
         -- return
         return collect
-      print "ma ->", (require "inspect") matching
       files = matching
     else
       accp ..= part .. "/"
