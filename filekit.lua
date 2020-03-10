@@ -473,6 +473,44 @@ local setMode
 setMode = function(file, mode)
   return lfs.setmode(file, mode)
 end
+local reduce
+reduce = function(path)
+  local parts
+  do
+    local _accum_0 = { }
+    local _len_0 = 1
+    for part in path:gmatch("[^/]+") do
+      _accum_0[_len_0] = part
+      _len_0 = _len_0 + 1
+    end
+    parts = _accum_0
+  end
+  if #parts == 1 then
+    return path
+  end
+  local final = { }
+  for _index_0 = 1, #parts do
+    local _continue_0 = false
+    repeat
+      local part = parts[_index_0]
+      if part == "." then
+        _continue_0 = true
+        break
+      elseif part == ".." then
+        if final[#final] then
+          final[#final] = nil
+        end
+      else
+        final[#final + 1] = part
+      end
+      _continue_0 = true
+    until true
+    if not _continue_0 then
+      break
+    end
+  end
+  return table.concat(final, "/")
+end
 local glob
 glob = function(path)
   if not (path:match("%*")) then
@@ -495,8 +533,9 @@ glob = function(path)
     parts = _accum_0
   end
   local dirs = (path:match("/$")) == "/"
-  local accp = ""
+  local accp = combine(currentDir(), "/")
   local files = { }
+  print((require("inspect"))(parts))
   for i, part in ipairs(parts) do
     if part:match("%*") then
       local matching
@@ -507,12 +546,13 @@ glob = function(path)
         for _index_0 = 1, #_list_0 do
           local node = _list_0[_index_0]
           if (node:match(((sant(part)):gsub("%%%*", "(.+)")))) then
-            _accum_0[_len_0] = combine(accp, node)
+            _accum_0[_len_0] = reduce(combine(accp, node))
             _len_0 = _len_0 + 1
           end
         end
         matching = _accum_0
       end
+      print((require("inspect"))(matching))
       if dirs then
         do
           local _accum_0 = { }
@@ -611,6 +651,7 @@ return {
   list1 = list1,
   glob = glob,
   iglob = iglob,
+  reduce = reduce,
   isDir = isDir,
   isFile = isFile,
   isBlockDevice = isBlockDevice,

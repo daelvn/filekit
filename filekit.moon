@@ -481,6 +481,24 @@ unlock = (file, start, length) -> lfs.unlock file, start, length
 -- @treturn string|nil If not successful, an error message.
 setMode = (file, mode) -> lfs.setmode file, mode
 
+-- Reduces .. and . in paths
+-- @tparam string path Path with .. or .
+-- @treturn string Simplified path
+reduce = (path) ->
+  parts = [part for part in path\gmatch "[^/]+"]
+  if #parts == 1
+    return path
+  final = {}
+  for part in *parts
+    if part == "."
+      continue
+    elseif part == ".."
+      if final[#final]
+        final[#final] = nil
+    else
+      final[#final+1] = part
+  table.concat final, "/"
+
 --- Returns a list of paths matched by the globs
 -- @tparam string path Path with globs
 -- @treturn table Table of globbed files
@@ -489,12 +507,14 @@ glob = (path) ->
   sant  = (pattern) -> pattern\gsub "[%(%)%.%%%+%-%*%?%[%]%^%$]", "%%%0" if pattern
   parts = [part for part in path\gmatch "[^/]+"]
   dirs  = (path\match "/$") == "/"
-  accp  = ""
+  accp  = combine currentDir!, "/"
   files = {}
+  print (require "inspect") parts
   for i, part in ipairs parts
     if part\match "%*"
       -- select all matching
-      matching = [combine accp, node for node in *list1 accp when (node\match ((sant part)\gsub "%%%*", "(.+)"))]
+      matching = [reduce combine accp, node for node in *list1 accp when (node\match ((sant part)\gsub "%%%*", "(.+)"))]
+      print (require "inspect") matching
       -- select only dirs if trailing /
       if dirs
         matching = [dir for dir in *matching when isDir dir]
@@ -533,7 +553,7 @@ iglob = (path) ->
 {
   :currentDir, :changeDir, :getDir, :getBlockSize, :getBlocks, :getOctalPermissions, :getDevice, :getDeviceType, :getDrive, :getFreeSpace, :getUID, :getGID
   :getInode, :getLastAccess, :getLastChange, :getLastModification, :getLinks, :getMode, :getName, :getPermissions, :getSize, :exists, :list, :isReadOnly
-  :ilist, :list1, :glob, :iglob
+  :ilist, :list1, :glob, :iglob, :reduce
   :isDir, :isFile, :isBlockDevice, :isCharDevice, :isSocket, :isPipe, :isLink, :isOther, :makeDir, :move, :copy, :remove, :delete, :combine, :open, :find
   :link, :symlink, :touch, :lockDir, :lock, :unlock, :setMode
   :getLinkBlockSize, :getLinkBlocks, :getLinkOctalPermissions, :getLinkDevice, :getLinkDeviceType, :getLinkUID, :getLinkGID, :getLinkInode, :getLinkLastAccess
