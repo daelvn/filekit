@@ -485,7 +485,8 @@ setMode = (file, mode) -> lfs.setmode file, mode
 -- @tparam string path Path with .. or .
 -- @treturn string Simplified path
 reduce = (path) ->
-  parts = [part for part in path\gmatch "[^/]+"]
+  isroot, isdir = (path\match "^/"), (path\match "/$")
+  parts         = [part for part in path\gmatch "[^/]+"]
   if #parts == 1
     return path
   final = {}
@@ -497,7 +498,10 @@ reduce = (path) ->
         final[#final] = nil
     else
       final[#final+1] = part
-  table.concat final, "/"
+  f = table.concat final, "/"
+  f = "/" .. f if isroot
+  f = f .. "/" if isdir
+  return f
 
 --- Returns a list of paths matched by the globs
 -- @tparam string path Path with globs
@@ -509,12 +513,10 @@ glob = (path) ->
   dirs  = (path\match "/$") == "/"
   accp  = combine currentDir!, "/"
   files = {}
-  print (require "inspect") parts
   for i, part in ipairs parts
     if part\match "%*"
       -- select all matching
       matching = [reduce combine accp, node for node in *list1 accp when (node\match ((sant part)\gsub "%%%*", "(.+)"))]
-      print (require "inspect") matching
       -- select only dirs if trailing /
       if dirs
         matching = [dir for dir in *matching when isDir dir]
@@ -549,6 +551,8 @@ iglob = (path) ->
   return ->
     i += 1
     if i <= n then return globbed[i]
+
+print currentDir!
 
 {
   :currentDir, :changeDir, :getDir, :getBlockSize, :getBlocks, :getOctalPermissions, :getDevice, :getDeviceType, :getDrive, :getFreeSpace, :getUID, :getGID

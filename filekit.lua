@@ -475,6 +475,7 @@ setMode = function(file, mode)
 end
 local reduce
 reduce = function(path)
+  local isroot, isdir = (path:match("^/")), (path:match("/$"))
   local parts
   do
     local _accum_0 = { }
@@ -509,7 +510,14 @@ reduce = function(path)
       break
     end
   end
-  return table.concat(final, "/")
+  local f = table.concat(final, "/")
+  if isroot then
+    f = "/" .. f
+  end
+  if isdir then
+    f = f .. "/"
+  end
+  return f
 end
 local glob
 glob = function(path)
@@ -535,7 +543,6 @@ glob = function(path)
   local dirs = (path:match("/$")) == "/"
   local accp = combine(currentDir(), "/")
   local files = { }
-  print((require("inspect"))(parts))
   for i, part in ipairs(parts) do
     if part:match("%*") then
       local matching
@@ -552,7 +559,6 @@ glob = function(path)
         end
         matching = _accum_0
       end
-      print((require("inspect"))(matching))
       if dirs then
         do
           local _accum_0 = { }
@@ -622,6 +628,7 @@ iglob = function(path)
     end
   end
 end
+print(currentDir())
 return {
   currentDir = currentDir,
   changeDir = changeDir,
