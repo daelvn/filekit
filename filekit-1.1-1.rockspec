@@ -1,8 +1,8 @@
 package = "filekit"
-version = "1.0.1-1"
+version = "1.1-1"
 source = {
   url = "git://github.com/daelvn/filekit.git",
-  tag = "v1.0.1",
+  tag = "v1.1",
 }
 description = {
   summary = "A wrapper around LuaFileSystem that implements some more functions.",
