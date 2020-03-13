@@ -288,6 +288,17 @@ local list1 = _check(function(path)
   end
   return _accum_0
 end)
+local ilist1 = _check(function(path)
+  local files = list1(path)
+  local i = 0
+  local n = #files
+  return function()
+    i = i + 1
+    if i <= n then
+      return files[i]
+    end
+  end
+end)
 local safeOpen
 safeOpen = function(path, mode)
   local a, b = io.open(path, mode)
@@ -408,6 +419,20 @@ local combine = _check(function(basePath, localPath)
   end
 end)
 local open = io.open
+local listAll
+listAll = function(path, all)
+  if all == nil then
+    all = { }
+  end
+  for node in ilist1(path) do
+    local fullnode = combine(path, node)
+    table.insert(all, fullnode)
+    if isDir(fullnode) then
+      listAll(fullnode, all)
+    end
+  end
+  return all
+end
 local find
 find = function(wildcard, base, results)
   if base == nil then
@@ -417,7 +442,7 @@ find = function(wildcard, base, results)
     results = { }
   end
   wildcard = wildcard:gsub("%*", "(.-)")
-  local listing = list(currentDir)
+  local listing = list1(currentDir())
   for _index_0 = 1, #listing do
     local item = listing[_index_0]
     if (base .. item):match(wildcard) then
@@ -519,102 +544,52 @@ reduce = function(path)
   end
   return f
 end
-local glob
-glob = function(path)
-  if not (path:match("%*")) then
-    return path
-  end
-  local sant
-  sant = function(pattern)
+local fromGlob
+fromGlob = function(glob)
+  local sanitize
+  sanitize = function(pattern)
     if pattern then
       return pattern:gsub("[%(%)%.%%%+%-%*%?%[%]%^%$]", "%%%0")
     end
   end
-  local parts
+  local saglob = sanitize(glob)
   do
-    local _accum_0 = { }
-    local _len_0 = 1
-    for part in path:gmatch("[^/]+") do
-      _accum_0[_len_0] = part
-      _len_0 = _len_0 + 1
-    end
-    parts = _accum_0
+    local _with_0 = saglob
+    local mid = _with_0:gsub("%%%*%%%*", ".*")
+    mid = mid:gsub("%%%*", "[^/]*")
+    mid = mid:gsub("%%%?", ".")
+    return tostring(mid) .. "$"
   end
-  local dirs = (path:match("/$")) == "/"
-  local accp = combine(currentDir(), "/")
-  local files = { }
-  for i, part in ipairs(parts) do
-    if part:match("%*") then
-      local matching
-      do
-        local _accum_0 = { }
-        local _len_0 = 1
-        local _list_0 = list1(accp)
-        for _index_0 = 1, #_list_0 do
-          local node = _list_0[_index_0]
-          if (node:match(((sant(part)):gsub("%%%*", "(.+)")))) then
-            _accum_0[_len_0] = reduce(combine(accp, node))
-            _len_0 = _len_0 + 1
-          end
-        end
-        matching = _accum_0
-      end
-      if dirs then
-        do
-          local _accum_0 = { }
-          local _len_0 = 1
-          for _index_0 = 1, #matching do
-            local dir = matching[_index_0]
-            if isDir(dir) then
-              _accum_0[_len_0] = dir
-              _len_0 = _len_0 + 1
-            end
-          end
-          matching = _accum_0
-        end
-      end
-      if i ~= #parts then
-        local collect = { }
-        do
-          local _accum_0 = { }
-          local _len_0 = 1
-          for _index_0 = 1, #matching do
-            local dir = matching[_index_0]
-            if isDir(dir) then
-              _accum_0[_len_0] = dir
-              _len_0 = _len_0 + 1
-            end
-          end
-          matching = _accum_0
-        end
-        for _index_0 = 1, #matching do
-          local ma = matching[_index_0]
-          local partc
-          do
-            local _accum_0 = { }
-            local _len_0 = 1
-            for _index_1 = 1, #parts do
-              local part = parts[_index_1]
-              _accum_0[_len_0] = part
-              _len_0 = _len_0 + 1
-            end
-            partc = _accum_0
-          end
-          partc[i] = getName(ma)
-          local _list_0 = glob(table.concat(partc, "/"))
-          for _index_1 = 1, #_list_0 do
-            local file = _list_0[_index_1]
-            table.insert(collect, file)
-          end
-        end
-        return collect
-      end
-      files = matching
-    else
-      accp = accp .. (part .. "/")
+end
+local matchGlob
+matchGlob = function(glob, path)
+  return nil ~= path:match(glob)
+end
+local glob
+glob = function(path, all)
+  if all == nil then
+    all = { }
+  end
+  if not (path:match("%*")) then
+    return path
+  end
+  local currentpath = currentDir()
+  local fullpath = reduce(combine(currentpath, path))
+  local correctpath = ""
+  for i = 1, #fullpath do
+    if (fullpath:sub(i, i)) == (currentpath:sub(i, i)) then
+      correctpath = correctpath .. currentpath:sub(i, i)
     end
   end
-  return files
+  local toglob = fromGlob(fullpath)
+  local _list_0 = listAll(correctpath)
+  for _index_0 = 1, #_list_0 do
+    local node = _list_0[_index_0]
+    if node:match(toglob) then
+      table.insert(all, node)
+    end
+  end
+  return all
 end
 local iglob
 iglob = function(path)
@@ -628,7 +603,6 @@ iglob = function(path)
     end
   end
 end
-print(currentDir())
 return {
   currentDir = currentDir,
   changeDir = changeDir,
@@ -656,6 +630,10 @@ return {
   isReadOnly = isReadOnly,
   ilist = ilist,
   list1 = list1,
+  ilist1 = ilist1,
+  listAll = listAll,
+  fromGlob = fromGlob,
+  matchGlob = matchGlob,
   glob = glob,
   iglob = iglob,
   reduce = reduce,

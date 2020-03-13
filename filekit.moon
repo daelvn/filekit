@@ -255,6 +255,17 @@ ilist = _check (path) ->
 -- @treturn table Table of all the subnodes.
 list1 = _check (path) -> [file for file in *list path when (file != "..") and (file != ".")]
 
+--- List iterator (as lfs.dir) using list1
+-- @tparam string path Path of the folder.
+-- @treturn function Iterator
+ilist1 = _check (path) ->
+  files = list1 path
+  i     = 0
+  n     = #files
+  return ->
+    i += 1
+    if i <= n then return files[i]
+
 --- Returns a file handle, or if errored, a table with a field `error` that contains the error.
 -- @tparam string path Path to the file.
 -- @tparam string mode Mode to open the file in.
@@ -410,13 +421,24 @@ combine = _check (basePath, localPath) -> return with basePath .. localPath
 -- @treturn File File handle.
 open = io.open
 
+--- Lists all nodes in a directory recursively
+-- @tparam string path Path to recurse
+-- @treturn table List of nodes
+listAll = (path, all={}) ->
+  for node in ilist1 path
+    fullnode = combine path, node
+    table.insert all, fullnode
+    if isDir fullnode
+      listAll fullnode, all
+  all
+
 --- Searches the computer's files using wildcards.
 -- On non CC systems, it only looks recursively in the current directory.
 -- @tparam string wildcard Wildcard to match.
 -- @treturn table Table of results.
 find = (wildcard, base="", results={}) ->
   wildcard = wildcard\gsub "%*", "(.-)"
-  listing  = list currentDir
+  listing  = list1 currentDir!
   for item in *listing
     table.insert results, base..item if (base..item)\match wildcard
     if isDir item
@@ -503,43 +525,46 @@ reduce = (path) ->
   f = f .. "/" if isdir
   return f
 
+-- Turns a glob into a Lua pattern
+-- @tparam string glob Path with globs
+-- @treturn string Lua pattern
+fromGlob = (glob) ->
+  sanitize = (pattern) -> pattern\gsub "[%(%)%.%%%+%-%*%?%[%]%^%$]", "%%%0" if pattern
+  saglob   = sanitize glob
+  with saglob
+    mid = \gsub "%%%*%%%*", ".*"
+    mid = mid\gsub "%%%*",     "[^/]*"
+    mid = mid\gsub "%%%?",     "."
+    return "#{mid}$"
+
+--- Matches a compiled glob with a string
+-- @tparam string glob Compiled glob
+-- @tparam string path Path to compare to
+-- @treturn boolean Whether it matches or not
+matchGlob = (glob, path) -> nil != path\match glob
+
 --- Returns a list of paths matched by the globs
 -- @tparam string path Path with globs
 -- @treturn table Table of globbed files
-glob = (path) ->
+glob = (path, all={}) ->
+  -- Return if there is nothing to glob
   return path unless path\match "%*"
-  sant  = (pattern) -> pattern\gsub "[%(%)%.%%%+%-%*%?%[%]%^%$]", "%%%0" if pattern
-  parts = [part for part in path\gmatch "[^/]+"]
-  dirs  = (path\match "/$") == "/"
-  accp  = combine currentDir!, "/"
-  files = {}
-  for i, part in ipairs parts
-    if part\match "%*"
-      -- select all matching
-      matching = [reduce combine accp, node for node in *list1 accp when (node\match ((sant part)\gsub "%%%*", "(.+)"))]
-      -- select only dirs if trailing /
-      if dirs
-        matching = [dir for dir in *matching when isDir dir]
-      -- if not final part, iterate in
-      if i != #parts
-        collect  = {}
-        -- get only dirs
-        matching = [dir for dir in *matching when isDir dir]
-        -- for all dirs
-        for ma in *matching do
-          -- get files that match them
-          -- copy parts, replace this part with glob
-          partc    = [part for part in *parts]
-          partc[i] = getName ma
-          -- glob in
-          for file in *glob table.concat partc, "/"
-            table.insert collect, file
-        -- return
-        return collect
-      files = matching
-    else
-      accp ..= part .. "/"
-  files
+  -- Get full paths
+  currentpath = currentDir!
+  fullpath    = reduce combine currentpath, path
+  -- Create a correct listing
+  correctpath = ""
+  for i=1, #fullpath
+    if (fullpath\sub i, i) == (currentpath\sub i, i)
+      correctpath ..= currentpath\sub i, i
+  -- Create glob
+  toglob      = fromGlob fullpath
+  -- Iterate files
+  for node in *listAll correctpath
+    --print node, toglob
+    table.insert all, node if node\match toglob
+  -- Return
+  return all
 
 --- Glob as an iterator
 -- @tparam string path Path with globs
@@ -552,12 +577,10 @@ iglob = (path) ->
     i += 1
     if i <= n then return globbed[i]
 
-print currentDir!
-
 {
   :currentDir, :changeDir, :getDir, :getBlockSize, :getBlocks, :getOctalPermissions, :getDevice, :getDeviceType, :getDrive, :getFreeSpace, :getUID, :getGID
   :getInode, :getLastAccess, :getLastChange, :getLastModification, :getLinks, :getMode, :getName, :getPermissions, :getSize, :exists, :list, :isReadOnly
-  :ilist, :list1, :glob, :iglob, :reduce
+  :ilist, :list1, :ilist1, :listAll, :fromGlob, :matchGlob, :glob, :iglob, :reduce
   :isDir, :isFile, :isBlockDevice, :isCharDevice, :isSocket, :isPipe, :isLink, :isOther, :makeDir, :move, :copy, :remove, :delete, :combine, :open, :find
   :link, :symlink, :touch, :lockDir, :lock, :unlock, :setMode
   :getLinkBlockSize, :getLinkBlocks, :getLinkOctalPermissions, :getLinkDevice, :getLinkDeviceType, :getLinkUID, :getLinkGID, :getLinkInode, :getLinkLastAccess
