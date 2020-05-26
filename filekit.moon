@@ -404,11 +404,11 @@ filecopy = _check (fr, to) ->
       \close!
     \close!
 
+local copy
 --- Copies a file or directory to a new location.
 -- @tparam string path Path of the old location.
 -- @tparam string path Path of the new location.
 -- @treturn nil
-local copy
 copy = _check (fr, to) ->
   error "copy $ #{fr} does not exist" unless exists fr
   if isDir fr
@@ -427,11 +427,11 @@ isEmpty = (path) ->
   return false unless isDir path
   return 0 == #(list1 path)
 
+local delete
 --- Deletes a file or directory.
 -- Alias: `remove`
 -- @tparam string path Path to delete.
 -- @treturn nil
-local delete
 delete = (path) ->
   return unless exists path
   if isFile path or isEmpty path
