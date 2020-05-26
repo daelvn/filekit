@@ -3,7 +3,7 @@
 -- It also incorporates compatibility with the [ComputerCraft FS API](http://computercraft.info/wiki/Fs_(API))
 -- @module filekit
 -- @author daelvn
--- @copyright 11.07.2019
+_VERSION = "1.4a"
 
 -- If we're on ComputerCraft, just return the FS API.
 return fs if _HOST and fs
@@ -385,26 +385,6 @@ makeDir = lfs.mkdir
 -- @treturn nil
 move = os.rename
 
---- Copies a file or directory to a new location.
--- @tparam string path Path of the old location.
--- @tparam string path Path of the new location.
--- @treturn nil
-copy = _check (fr, to) ->
-  error "copy $ #{fr} does not exist" unless exists fr
-  with assert (io.open fr, "rb"), "copy $ could not open #{fr} in 'rb' mode"
-    contents = \read "*a"
-    with assert (io.open to, "wb"), "copy $ could not create #{to} in 'wb' mode"
-      \write contents
-      \close!
-    \close!
-
---- Deletes a file or directory.
--- Alias: `remove`
--- @tparam string path Path to delete.
--- @treturn nil
-delete = os.remove
-remove = delete
-
 --- Combines two path components, returning a path consisting of the local path nested inside the base path.
 -- @tparam string basePath Path which contains the local path.
 -- @tparam string localPath Contained path.
@@ -414,6 +394,53 @@ combine = _check (basePath, localPath) -> return with basePath .. localPath
     _with_0 = basePath .. "/" .. localPath
   else
     _with_0 = \gsub "//", "/"
+
+filecopy = _check (fr, to) ->
+  error "copy $ #{fr} does not exist" unless exists fr
+  with assert (io.open fr, "rb"), "copy $ could not open #{fr} in 'rb' mode"
+    contents = \read "*a"
+    with assert (io.open to, "wb"), "copy $ could not create #{to} in 'wb' mode"
+      \write contents
+      \close!
+    \close!
+
+--- Copies a file or directory to a new location.
+-- @tparam string path Path of the old location.
+-- @tparam string path Path of the new location.
+-- @treturn nil
+local copy
+copy = _check (fr, to) ->
+  error "copy $ #{fr} does not exist" unless exists fr
+  if isDir fr
+    error "copy $ #{to} already exists" if exists to
+    makeDir to
+    for node in ilist1 fr
+      copy (combine fr, node), (combine to, node)
+  elseif isFile fr
+    filecopy fr, to
+
+--- Checks if a directory is empty or not.
+-- @tparam string path Directory to check.
+-- @treturn boolean
+isEmpty = (path) ->
+  error "isEmpty $ #{path} does not exist" unless exists path
+  return false unless isDir path
+  return 0 == #(list1 path)
+
+--- Deletes a file or directory.
+-- Alias: `remove`
+-- @tparam string path Path to delete.
+-- @treturn nil
+local delete
+delete = (path) ->
+  return unless exists path
+  if isFile path or isEmpty path
+    os.remove path
+  else
+    for node in ilist1 path
+      delete combine path, node
+    os.remove path
+remove = delete
 
 --- Opens a file so it can be read or written.
 -- @tparam string path Path to open.
@@ -581,9 +608,10 @@ iglob = (path) ->
   :currentDir, :changeDir, :getDir, :getBlockSize, :getBlocks, :getOctalPermissions, :getDevice, :getDeviceType, :getDrive, :getFreeSpace, :getUID, :getGID
   :getInode, :getLastAccess, :getLastChange, :getLastModification, :getLinks, :getMode, :getName, :getPermissions, :getSize, :exists, :list, :isReadOnly
   :ilist, :list1, :ilist1, :listAll, :fromGlob, :matchGlob, :glob, :iglob, :reduce
-  :isDir, :isFile, :isBlockDevice, :isCharDevice, :isSocket, :isPipe, :isLink, :isOther, :makeDir, :move, :copy, :remove, :delete, :combine, :open, :find
+  :isDir, :isFile, :isEmpty, :isBlockDevice, :isCharDevice, :isSocket, :isPipe, :isLink, :isOther, :makeDir, :move, :copy, :remove, :delete, :combine, :open, :find
   :link, :symlink, :touch, :lockDir, :lock, :unlock, :setMode
   :getLinkBlockSize, :getLinkBlocks, :getLinkOctalPermissions, :getLinkDevice, :getLinkDeviceType, :getLinkUID, :getLinkGID, :getLinkInode, :getLinkLastAccess
   :getLinkLastChange, :getLinkLastModification, :getLinkLinks, :getLinkMode, :getLinkPermissions, :getLinkSize
   :safeOpen
+  :_VERSION
 }

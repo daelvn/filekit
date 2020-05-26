@@ -1,3 +1,4 @@
+local _VERSION = "1.4a"
 if _HOST and fs then
   return fs
 end
@@ -389,7 +390,18 @@ local getFreeSpace = _check(function(path)
 end)
 local makeDir = lfs.mkdir
 local move = os.rename
-local copy = _check(function(fr, to)
+local combine = _check(function(basePath, localPath)
+  do
+    local _with_0 = basePath .. localPath
+    if (not basePath:match("/$")) and (not localPath:match("^/")) then
+      _with_0 = basePath .. "/" .. localPath
+    else
+      _with_0 = _with_0:gsub("//", "/")
+    end
+    return _with_0
+  end
+end)
+local filecopy = _check(function(fr, to)
   if not (exists(fr)) then
     error("copy $ " .. tostring(fr) .. " does not exist")
   end
@@ -405,19 +417,48 @@ local copy = _check(function(fr, to)
     return _with_0
   end
 end)
-local delete = os.remove
-local remove = delete
-local combine = _check(function(basePath, localPath)
-  do
-    local _with_0 = basePath .. localPath
-    if (not basePath:match("/$")) and (not localPath:match("^/")) then
-      _with_0 = basePath .. "/" .. localPath
-    else
-      _with_0 = _with_0:gsub("//", "/")
+local copy
+copy = _check(function(fr, to)
+  if not (exists(fr)) then
+    error("copy $ " .. tostring(fr) .. " does not exist")
+  end
+  if isDir(fr) then
+    if exists(to) then
+      error("copy $ " .. tostring(to) .. " already exists")
     end
-    return _with_0
+    makeDir(to)
+    for node in ilist1(fr) do
+      copy((combine(fr, node)), (combine(to, node)))
+    end
+  elseif isFile(fr) then
+    return filecopy(fr, to)
   end
 end)
+local isEmpty
+isEmpty = function(path)
+  if not (exists(path)) then
+    error("isEmpty $ " .. tostring(path) .. " does not exist")
+  end
+  if not (isDir(path)) then
+    return false
+  end
+  return 0 == #(list1(path))
+end
+local delete
+delete = function(path)
+  if not (exists(path)) then
+    return 
+  end
+  if isFile(path or isEmpty(path)) then
+    return os.remove(path)
+  else
+    for node in ilist1(path) do
+      delete(combine(path, node))
+    end
+    return os.remove(path)
+  end
+end
+local remove = delete
 local open = io.open
 local listAll
 listAll = function(path, all)
@@ -639,6 +680,7 @@ return {
   reduce = reduce,
   isDir = isDir,
   isFile = isFile,
+  isEmpty = isEmpty,
   isBlockDevice = isBlockDevice,
   isCharDevice = isCharDevice,
   isSocket = isSocket,
@@ -675,5 +717,6 @@ return {
   getLinkMode = getLinkMode,
   getLinkPermissions = getLinkPermissions,
   getLinkSize = getLinkSize,
-  safeOpen = safeOpen
+  safeOpen = safeOpen,
+  _VERSION = _VERSION
 }
