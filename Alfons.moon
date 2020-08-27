@@ -1,8 +1,6 @@
 tasks:
-  compile:       => moonc "filekit.moon"
-  docs:          => sh "ldoc ."
-  release: (ver) => sh "rockbuild -m -t #{ver} u"
-  make:    (ver) => sh "rockbuild -m --delete #{ver}"
-  test:          =>
-    fs = require "filekit"
-    fs.remove "copy/"
+  compile: => moonc "filekit.moon"
+  release: => sh "rockbuild -m -t #{@v} u"
+  make:    => sh "rockbuild -m --delete #{@v}"
+  docs:    =>
+    sh "docsify serve docs" if uses "serve"

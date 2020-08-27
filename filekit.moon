@@ -27,6 +27,7 @@ changeDir = _check (path) ->
   lfs.chdir    path
   currentDir = path
 
+-- TODO remove all these functions
 --- Gets the device of the inode.
 -- @tparam string path Path.
 -- @treturn number Device number.
@@ -404,11 +405,11 @@ filecopy = _check (fr, to) ->
       \close!
     \close!
 
+local copy
 --- Copies a file or directory to a new location.
 -- @tparam string path Path of the old location.
 -- @tparam string path Path of the new location.
 -- @treturn nil
-local copy
 copy = _check (fr, to) ->
   error "copy $ #{fr} does not exist" unless exists fr
   if isDir fr
@@ -427,11 +428,11 @@ isEmpty = (path) ->
   return false unless isDir path
   return 0 == #(list1 path)
 
+local delete
 --- Deletes a file or directory.
 -- Alias: `remove`
 -- @tparam string path Path to delete.
 -- @treturn nil
-local delete
 delete = (path) ->
   return unless exists path
   if isFile path or isEmpty path
@@ -459,6 +460,9 @@ listAll = (path, all={}) ->
       listAll fullnode, all
   all
 
+-- TODO make this take a globbed path instead
+-- TODO also use listAll instead
+-- TODO implement ifind
 --- Searches the computer's files using wildcards.
 -- On non CC systems, it only looks recursively in the current directory.
 -- @tparam string wildcard Wildcard to match.
@@ -473,6 +477,9 @@ find = (wildcard, base="", results={}) ->
       for subitem in *subresults do table.insert results, subitem
   results
 
+-- TODO rework implementation
+-- TODO add basename, filename, extension, pathname
+-- TODO add isAbsolute
 --- Returns the parent directory of path.
 -- @tparam string path Path.
 -- @treturn string Parent path.
@@ -559,11 +566,13 @@ fromGlob = (glob) ->
   sanitize = (pattern) -> pattern\gsub "[%(%)%.%%%+%-%*%?%[%]%^%$]", "%%%0" if pattern
   saglob   = sanitize glob
   with saglob
-    mid = \gsub "%%%*%%%*", ".*"
+    mid = \gsub "%%%*%%%*",    ".*"
     mid = mid\gsub "%%%*",     "[^/]*"
-    mid = mid\gsub "%%%?",     "."
+    mid = mid\gsub "%%%?",     "." -- TODO this should be [^/]
     return "#{mid}$"
 
+-- TODO alias this to testGlob
+-- TODO compile the glob here, dont make the user do it
 --- Matches a compiled glob with a string
 -- @tparam string glob Compiled glob
 -- @tparam string path Path to compare to
